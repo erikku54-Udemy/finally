@@ -1,1 +1,1 @@
-Review the documentation file in the planning folder called $ARGUMENTS and add questions, clarifications or feedback to a new section at the end, along with any opportunities to simplify
+審閱 planning 資料夾中名為 $ARGUMENTS 的文件檔案，並在結尾處新增一個區塊，加入問題、澄清或回饋，以及任何可以簡化的建議。
