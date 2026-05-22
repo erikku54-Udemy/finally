@@ -307,7 +307,7 @@ LLM_MOCK=false
 1. 載入使用者目前的投資組合內容（現金、含損益的持倉、含即時價格的觀察清單、總資產價值）
 2. 從 chat_messages 資料表載入最近 5 則對話（user + assistant 各算一則），以避免 prompt 超出模型上下文視窗
 3. 使用系統訊息、投資組合內容、對話歷史與使用者新訊息組成 prompt
-4. 透過 LiteLLM → OpenRouter 呼叫 LLM，並要求 structured output，使用 cerebras-inference skill
+4. 透過 LiteLLM → OpenRouter 呼叫 LLM，並要求 structured output，使用 open-inference skill
 5. 解析完整的結構化 JSON 回應
 6. 自動執行回應中指定的交易或觀察清單變更
 7. 將訊息與已執行動作存入 chat_messages
@@ -406,6 +406,8 @@ Stage 2: Python 3.12 slim
 ```
 
 FastAPI 會在 8000 埠提供靜態前端檔案與所有 API 路由。
+
+> **根目錄 `package.json` 說明**：專案根目錄有一個最小化的 `package.json`，僅宣告 `packageManager` 欄位以鎖定 pnpm 版本（供 Corepack 使用）。它不包含任何 dependency，也不是獨立的 Node 專案——實際的前端依賴全部管理在 `frontend/package.json` 內。
 
 ### Docker Volume
 

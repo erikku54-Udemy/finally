@@ -1,49 +1,140 @@
-# PLAN.md 審查回饋
+# 自上次 commit 以來的變更審查
 
-## 主要問題
+## Findings
 
-1. **LLM 金鑰需求與「無需設定即可開發/測試」目標衝突**  
-   `OPENROUTER_API_KEY` 被標為必填（`planning/PLAN.md:125`），但後面又說 `LLM_MOCK=true` 可支援「不需要 API key 的開發流程」（`planning/PLAN.md:355-359`）。如果啟動流程在缺少 key 時直接失敗，mock 模式與 E2E 都會被破壞。建議明確規定：只有 `LLM_MOCK=false` 且聊天端點需要真實 LLM 時才要求 `OPENROUTER_API_KEY`；mock 模式與純市場資料/交易功能不應阻擋啟動。
+未發現需要修正的問題。
 
-2. **LLM 指令引用的 skill 名稱不一致且不可驗證**  
-   第 9 節先要求使用 `open-inference skill`（`planning/PLAN.md:299`），流程第 4 步又寫 `cerebras-inference skill`（`planning/PLAN.md:310`）。如果代理依文件分工，這會造成不同實作者採用不同整合方式。建議統一成一個明確名稱，並補上 LiteLLM provider/model 設定範例，例如 model id、OpenRouter headers、Cerebras routing 參數，以及 mock 模式如何繞過該整合。
+## 審查範圍
 
-3. **SSE 觀察清單同步規格不足，前後端可能做出不相容協定**  
-   文件要求新增/移除 ticker 後「不需要重新連線」且前端收到移除事件後清空 sparkline（`planning/PLAN.md:177-182`），但沒有定義 SSE event type、payload schema、移除事件格式、錯誤事件、heartbeat 或 reconnect 後的初始快照。這是前後端高風險交界。建議補上至少三種事件：`snapshot`、`price`、`watchlist_removed`，並明確 JSON 欄位。
+- `.gitignore` 新增 `node_modules/` 忽略規則。
+- `planning/PLAN.md` 將 LLM 整合流程中的 skill 名稱統一為 `open-inference skill`。
+- `planning/PLAN.md` 補充根目錄 `package.json` 的用途說明。
+- 原本的 `planning/REVIEW.md` 被刪除；本檔為本次審查重新產生的回饋。
 
-4. **`/api/prices/history/{ticker}` 沒有可支撐的資料來源定義**  
-   API 要提供歷史價格（`planning/PLAN.md:262-265`），前端也依賴它初始化主圖與 sparkline（`planning/PLAN.md:371-372`），但資料庫 schema 沒有價格歷史表，市場資料章節只描述記憶體最新價格快取（`planning/PLAN.md:168-173`）。若使用模擬器，重啟後或剛加入 ticker 時如何回傳歷史資料未定義；若使用 Massive，也未說要取哪個 endpoint 與時間窗。建議定義 history endpoint 的來源、資料點數、時間粒度，以及無資料時回傳空陣列還是合成 seed series。
+## Notes
 
-5. **交易與投資組合 API 缺少回應/錯誤契約，會拖慢前後端整合**  
-   `/api/portfolio/trade` 只列出 request shape（`planning/PLAN.md:269-273`），但沒有定義成功回應、錯誤碼、數量/價格精度、ticker 正規化、零碎股最小數量、是否允許賣出非 watchlist ticker、以及交易時取不到價格時的處理。這些都會影響 UI 狀態更新與測試。建議新增 API schema 小節，至少定義 `TradeRequest`、`TradeResult`、`PortfolioResponse`、`ApiError`。
+- `.gitignore` 的 `node_modules/` 規則合理，會避免本機安裝輸出被納入版本控制。
+- LLM skill 名稱現在和同一節前文一致，修正了先前 `open-inference` 與 `cerebras-inference` 混用的規格風險。
+- 根目錄 `package.json` 目前只宣告 `packageManager`，新增說明與實際內容一致。
 
-6. **自動執行 LLM 交易的規則彼此拉扯**  
-   文件同時說 LLM 可以「代為執行交易」（`planning/PLAN.md:30`）、會自動執行 structured output 中的交易（`planning/PLAN.md:312-334`），又在 prompt 指引中要求「在使用者要求或同意時執行交易」（`planning/PLAN.md:348`）。目前沒有可執行的判斷規則，模型可能在一般分析問題中產生交易。建議後端加一道 deterministic guard：只有當最新使用者訊息明確要求交易/管理觀察清單時才執行 actions；否則只顯示建議並忽略 action arrays。
+## Residual Risk
 
-7. **Docker volume 說明有命名 volume 與專案目錄掛載混用的歧義**  
-   文件說 SQLite 位於專案根目錄 `db/finally.db`（`planning/PLAN.md:68`、`planning/PLAN.md:115`），但 Docker 範例使用命名 volume `finally-data:/app/db`（`planning/PLAN.md:414-418`）。這兩者行為不同：命名 volume 不會把資料寫回 repo 的 `db/`。建議明確區分開發 bind mount 與正式/示範命名 volume，並規定 start script 採用哪一種。
+- 本次變更是文件與 ignore 規則更新，沒有可執行程式碼變更；未執行測試。
 
-8. **Next.js static export 與後端 API/static fallback 需要更精確規格**  
-   架構要求 Next.js `output: 'export'` 並由 FastAPI 提供 `/*` 靜態檔案（`planning/PLAN.md:66`、`planning/PLAN.md:408`），但沒有說明輸出目錄是 `out/`、Docker 複製到哪裡、FastAPI 如何避免 `/api/*` 被 static catch-all 吃掉，以及 SPA fallback 是否需要回傳 `index.html`。建議補上路由掛載順序與 Docker copy path，避免建置完成後根頁或 API 404。
+---
 
-## 次要問題與改善建議
+# 完整變更審查（Session 207f4314）
 
-- `watchlist` 缺少 ticker 格式規範。建議統一 uppercase、去空白，並限制符號字元，避免 `aapl` 與 `AAPL` 繞過 UNIQUE。
-- 金錢與股數使用 SQLite `REAL`（`planning/PLAN.md:203`、`planning/PLAN.md:219-232`）對課程專案可接受，但應規定顯示與計算四捨五入策略，否則測試容易不穩。
-- `portfolio_snapshots` 每 30 秒記錄一次（`planning/PLAN.md:235`）可能讓 E2E 在短時間內沒有足夠 P&L 圖表資料。建議啟動 seed 一筆、每次價格更新可節流記錄，或測試模式縮短 snapshot interval。
-- Massive API 免費方案「每分鐘 5 次、每 15 秒輪詢一次」（`planning/PLAN.md:164`）數學上是 4 次/分鐘，並且所有 ticker 聯集若不能 batch 會超額。建議確認 API endpoint 是否支援批次報價，並把輪詢策略寫清楚。
-- Mock LLM 被要求至少產生一筆示範交易（`planning/PLAN.md:361`），但若每次 E2E 都執行同一筆交易，重跑或狀態未清空時可能現金/持倉不穩。建議 mock 根據輸入固定但可預測，或測試前重置 DB。
-- 啟動腳本「可選擇自動開啟瀏覽器」（`planning/PLAN.md:427`）需要環境差異處理。建議預設只印 URL，另提供 `--open`。
+## 變更摘要
 
-## 建議補充的契約
+本次 session 產生了 **3 份新的市場資料設計文件**（1,403 行），並對 `PLAN.md` 進行了 2 項微調修正。
 
-- API request/response JSON schema 與錯誤格式。
-- SSE event types 與完整 payload 範例。
-- 價格 history 的資料來源、時間窗、點數與空狀態行為。
-- LLM action execution guard 與失敗 action 的回傳格式。
-- Docker/start script 的實際資料持久化模式。
-- 測試模式的 deterministic seed、DB reset 策略與 mock LLM 行為。
+### 新增檔案
 
-## 總結
+1. **`planning/MASSIVE_API.md`** (407 行)
+   - Massive API（前 Polygon.io）基本資訊與免費方案限制說明
+   - Python 套件安裝指導
+   - 核心端點：全市場快照（`GET /v2/snapshot/.../tickers`）、單一 ticker、統一快照
+   - K 線與歷史資料端點說明
+   - 完整的錯誤處理程式碼範例
+   - 免費方案限制（5 req/min）→ 15 秒輪詢策略
 
-這份計畫的產品方向清楚，技術選型也適合課程期末專案。主要風險不在範圍過大，而在跨代理邊界的契約還不夠具體：SSE、history API、交易 API、LLM actions 與 Docker 資料路徑都需要更精準，否則前端、後端、測試代理會各自補假設，最後整合成本會升高。
+2. **`planning/MARKET_INTERFACE.md`** (527 行)
+   - 市場資料層抽象設計
+   - `MarketDataProvider` 抽象類別合約
+   - `PriceUpdate` / `PriceBar` 資料模型（含完整程式碼）
+   - `PriceCache` 共享快取實作（Provider 寫入、SSE 讀取）
+   - `MassiveProvider` 完整非同步實作
+   - `create_market_provider()` 工廠函式
+   - FastAPI lifespan 與 SSE 串流整合範例
+   - 目錄結構 `backend/app/market/`
+
+3. **`planning/MARKET_SIMULATOR.md`** (469 行)
+   - 幾何布朗運動（GBM）數學公式與推導
+   - 時間步長計算詳解
+   - 10 個預設 ticker 設定（種子價格接近真實市場）
+   - **板塊相關性模型**（科技股聯動）
+   - **隨機跳動事件**（每 ticker 每 tick 0.5% 機率 ±2%–5% 劇烈變動）
+   - `SimulatorProvider` 完整程式碼
+   - 確定性歷史回溯演算法（同 ticker 每次圖表一致）
+   - 測試範例 + 參數調整指南
+
+### 修改檔案
+
+1. **`.gitignore`**
+   - 新增 `node_modules/` 忽略規則（適用於根目錄最小化 `package.json`）
+   - 合理且無副作用
+
+2. **`planning/PLAN.md`**
+   - **行 310**：將 `cerebras-inference skill` 改為 `open-inference skill`（與行 299 保持一致）
+   - **行 410–411**：新增根目錄 `package.json` 用途說明（僅宣告 `packageManager`，不包含依賴）
+
+## 品質評估
+
+### ✅ 優點
+
+1. **文件完整度高**
+   - 三份文件涵蓋 API、抽象層、模擬器，互相參照清晰
+   - 包含完整程式碼片段與錯誤處理
+   - 提供數學公式與設定參數表
+
+2. **設計思路健全**
+   - 工廠模式分離 Provider 實作，支援無縫切換
+   - 共享快取與 SSE 解耦，符合反應式架構
+   - GBM 模型兼具數學嚴謹性與計算效率
+
+3. **實踐指導具體**
+   - 包含環境變數配置、class 簽名、API endpoint
+   - 測試範例直接可用
+
+### ⚠️ 需後續補充
+
+1. **`MASSIVE_API.md` 遺漏的細節**
+   - Massive REST client 的全市場快照端點完整 request/response schema（只有 fragment）
+   - 批次更新時錯誤處理邏輯（某個 ticker 失敗時是否 retry、fallback）
+   - 速率限制達到時的重試策略（backoff 參數）
+
+2. **`MARKET_INTERFACE.md` 的整合假設**
+   - FastAPI lifespan 範例假設 provider startup 不拋出異常（無 try-except）
+   - SSE event serialization format 未詳述（是否直接 JSON 或需 wrapper）
+   - `PriceCache` 的 dict 併發存取是否需鎖（asyncio 環境下可能安全，但文件未明確說明）
+
+3. **`MARKET_SIMULATOR.md` 的實作缺口**
+   - 板塊相關性（"同一板塊的 ticker 大概率同方向"）的 correlation matrix 定義不足
+     - 文件說「科技股一起漲跌」但沒有 matrix
+     - 如何決定 ticker A 漲時 ticker B 的機率
+   - 種子（seed）機制與確定性回溯的完整演算法流程（pseudo code）未提供
+
+### 🎯 對後續實作的影響
+
+| 層面 | 風險 | 緩解 |
+|------|------|------|
+| **後端實作** | Provider startup 在 lifespan 中未做異常處理，可能導致應用啟動失敗 | 應在 `create_market_provider()` 和 lifespan context 中加 try-finally |
+| **SSE 客戶端** | event type 與 JSON schema 未在文件中明確定義 | 需補充 `snapshot`、`price`、`watchlist_removed` event 的完整 payload |
+| **模擬器精度** | 相關性模型不夠具體，不同實作者可能差異大 | 應提供 correlation matrix 與決策樹，或提供參考實作 |
+| **Massive 集成** | 免費方案 5 req/min，但未說明多 ticker 批次是否計一次請求 | 需測試 `/v2/snapshot/.../tickers?tickers=AAPL,GOOGL,...` 的實際計數 |
+
+## 對標 PLAN.md 的補完情況
+
+**原 PLAN.md 遺留問題**（見 20250101 版本 REVIEW.md）中的進度：
+
+- ✅ **#2：LLM skill 名稱混用** → 已統一為 `open-inference`
+- ✅ **#4：歷史價格 API 資料來源** → `MARKET_INTERFACE.md` 和 `MASSIVE_API.md` 都涵蓋了 history endpoint
+- ✅ **#8：靜態檔案路由** → `PLAN.md` 已補充 `package.json` 說明，與根目錄掛載策略更清晰
+- ⚠️ **#3：SSE 事件規格** → `MARKET_INTERFACE.md` 提到 SSE，但事件類型與 payload 仍需細化
+- ⚠️ **#5：交易 API 契約** → 未在新文件中涵蓋，應補充 `TradeRequest`、`TradeResult` 的完整 schema
+
+## 建議後續行動
+
+1. **馬上做**
+   - 在 `MARKET_INTERFACE.md` 補充 SSE event types（`snapshot`, `price`, `watchlist_removed`）的完整 JSON schema
+   - 測試 Massive `/v2/snapshot/...` 的批次 request 計數方式，確認免費方案 QPS 計算
+
+2. **實作前做**
+   - 在 `MARKET_SIMULATOR.md` 補充相關性 matrix（10×10，科技 vs 金融 vs 消費）與決策邏輯
+   - 補充 `MARKET_INTERFACE.md` lifespan exception handling 的完整範例
+   - 提供 `MASSIVE_API.md` 的批次錯誤恢復流程
+
+3. **文件統整**
+   - 考慮將三份市場文件合併為單一 `planning/MARKET_DESIGN.md`，分三個小節
+   - 或新增 `planning/API_CONTRACTS.md` 統一定義所有 request/response/event schema
