@@ -945,7 +945,7 @@ class MassiveProvider(MarketDataProvider):
                 params={
                     "adjusted": "true",
                     "sort": "asc",
-                    "limit": bars,
+                    "limit": bars * 2,
                 },
             )
             resp.raise_for_status()
