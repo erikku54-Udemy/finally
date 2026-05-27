@@ -138,3 +138,84 @@
 3. **文件統整**
    - 考慮將三份市場文件合併為單一 `planning/MARKET_DESIGN.md`，分三個小節
    - 或新增 `planning/API_CONTRACTS.md` 統一定義所有 request/response/event schema
+
+---
+
+# 當前 Session 審查 (Stop Hook Check - 2026-05-23 09:33)
+
+## 工作狀態快照
+
+**Session ID:** `207f4314-0467-4763-b458-719f0850b5e7`  
+**當前分支:** `practice`  
+**最後 Commit:** `5e61d15` (chore: add Claude workflow from main)  
+**Commit 時間:** 2026-05-23 08:46:31 UTC+8
+
+### 自上次 Commit 以來的變更
+
+#### 檔案追蹤狀態
+```
+已提交變更：        無
+暫存變更：          無
+未跟蹤檔案：        11 個
+檔案差異：          無
+```
+
+#### 未跟蹤檔案清單（本地配置，無關業務邏輯）
+- `.bash_profile`, `.bashrc`, `.gitconfig`, `.gitmodules`
+- `.idea`, `.mcp.json`, `.profile`, `.ripgreprc`
+- `.vscode`, `.zprofile`, `.zshrc`
+
+### 最新 Commit 詳情
+
+```
+commit 5e61d15232db7498d7bba1ab0b15209fc8231d9b
+Author: Eric Huang <86519473+erikku54@users.noreply.github.com>
+Date:   Sat May 23 08:46:31 2026 +0800
+
+    chore: add Claude workflow from main
+
+ .github/workflows/claude-code-review.yml | 44 ++++++++++++++++++++++++++++
+ .github/workflows/claude.yml             | 50 ++++++++++++++++++++++++++++++++
+ 2 files changed, 94 insertions(+)
+```
+
+## 變更分析
+
+**結論：無待提交的變更。** 本次 session 自 commit `5e61d15` 後未對任何追蹤檔案進行修改。
+
+### Workflow 設定檔評估
+
+新增的 GitHub Actions workflow 檔案：
+
+| 檔案 | 行數 | 用途 | 狀態 |
+|------|------|------|------|
+| `.github/workflows/claude-code-review.yml` | 44 | 自動化程式碼審查 | ✅ 已提交 |
+| `.github/workflows/claude.yml` | 50 | Claude Code 整合工作流 | ✅ 已提交 |
+
+兩檔均已正確提交至 git，無未決議的變更。
+
+## 品質檢查結果
+
+| 檢查項目 | 結果 | 備註 |
+|---------|------|------|
+| **工作樹清潔** | ✅ 通過 | 所有追蹤檔案與 HEAD 一致 |
+| **遠端同步** | ✅ 通過 | `origin/practice` 無差異 |
+| **分支狀態** | ✅ 無衝突 | 可安全合併或繼續開發 |
+| **本地配置** | ℹ️ 預期 | 11 個未跟蹤檔案為使用者環境特定，不應提交 |
+
+## 建議與後續
+
+### 立即可採取的行動
+- ✅ 當前狀態可直接推送至遠端或進行新 feature 開發
+- ✅ 三份設計文件已完成，Workflow 已整合
+
+### 實作前的驗證工作
+1. 審視先前審查提及的設計缺口（SSE schema、exception handling、correlation matrix）
+2. 在實作初期驗證 Massive API 的免費方案 QPS 計數邏輯
+3. 確認 GBM 模擬器與板塊相關性的實現方式
+
+### 版本控制狀態總結
+- **可部署性：** ⚠️ 無可執行程式碼，設計審視中
+- **文件完整度：** ✅ 高（設計三份，計 1,403 行）
+- **測試覆蓋：** 無（純設計文件）
+- **向後相容性：** N/A（新功能，非修改）
